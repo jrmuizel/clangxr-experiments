@@ -118,7 +118,13 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	clang_getInstantiationLocation(cur_token_start, NULL, NULL, NULL, &start_offset);
 	clang_getInstantiationLocation(cur_token_end, NULL, NULL, NULL, &end_offset);
 	int offset = 0;
-	printf("<style>.punctuation { color: #646464 } .literal { color: #2a00ff } .identifier { color: #aa7700 } .comment { color: #3f5fbf } .keyword { color: #7f0055 }</style>");
+	printf("<style>\n"                               \
+	       ".punctuation { color: #646464 }\n"       \
+	       ".literal { color: #2a00ff }\n"           \
+	       ".identifier { color: #aa7700 }\n"        \
+	       ".comment { color: #3f5fbf }\n"           \
+	       ".keyword { color: #7f0055 }\n"           \
+	       "</style>");
 	printf("<pre>");
 	do {
 		bytes_read = fread(buf, 1, sizeof(buf), f);
