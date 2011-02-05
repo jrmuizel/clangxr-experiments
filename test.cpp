@@ -59,6 +59,8 @@ char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
   } else if (clang_isInvalid(kind)) {
     if (tokenKind == CXToken_Punctuation) {
       return "punctuation";
+    } else if (tokenKind == CXToken_Keyword) {
+      return "keyword";
     }
     puts("invalid?");
     printf("%d", kind);
@@ -97,7 +99,7 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	CXCursor *cursors;
 	unsigned num_tokens;
 	clang_tokenize(TU, full_range, &tokens, &num_tokens);
-	cursors = malloc(sizeof(CXCursor) * num_tokens);
+	cursors = new CXCursor[num_tokens];
 	clang_annotateTokens(TU, tokens, num_tokens, cursors);
 	FILE *f = fopen(file, "r");
 	char buf[4096];
