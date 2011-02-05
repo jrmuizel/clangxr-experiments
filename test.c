@@ -11,7 +11,7 @@ struct source_position {
 
 //XXX: this can probably be replaced by clang_getLocationForOffset
 struct source_position
-get_endLocation(char* file)
+get_endLocation(const char* file)
 {
 	FILE *f = fopen(file, "r");
 	char buf[4096];
@@ -91,7 +91,7 @@ char *token_kind_to_string(CXTokenKind kind)
 	}
 	return "unknown";
 }
-void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, char *file)
+void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *file)
 {
 	CXToken *tokens;
 	CXCursor *cursors;
@@ -173,36 +173,17 @@ int main(int argc, const char *const *argv)
 	CXTranslationUnit TU = clang_parseTranslationUnit(Index, 0,
 		argv, argc, 0, 0, CXTranslationUnit_None);
 
-	CXFile file = clang_getFile(TU, "test.c");
-#if 0
-	// this doesn't work because the root cursor doesn't seem to be 
-	CXCursor root_cursor = clang_getTranslationUnitCursor(TU);
-	//CXFile file = clang_getFile(TU, "test.c");
-	CXFile file;
-	CXSourceLocation root_location = clang_getCursorLocation(root_cursor);
-	if (clang_equalLocations(root_location, clang_getNullLocation())) {
-		printf("bad location");
-	}
-	clang_getInstantiationLocation(root_location, &file, NULL, NULL, NULL);
-	print_CXString(clang_getFileName(file));
-#endif
+	CXString filename = clang_getTranslationUnitSpelling(TU);
+	CXFile file = clang_getFile(TU, clang_getCString(filename));
+
 	CXSourceLocation begin = clang_getLocation(TU, file, 1, 1);
-	struct source_position end_pos = get_endLocation("test.c");
+	struct source_position end_pos = get_endLocation(clang_getCString(filename));
 	CXSourceLocation end = clang_getLocation(TU, file, end_pos.line_no, end_pos.column_no);
 	CXSourceRange full_range = clang_getRange(begin, end);
-	CXToken *tokens;
-	unsigned num_tokens;
-	clang_tokenize(TU, full_range, &tokens, &num_tokens);
-#if 0
-	printf("num tokens: %d\n", num_tokens);
-	for (int i=0; i<num_tokens; i++) {
-		CXString spelling = clang_getTokenSpelling(TU, tokens[i]);
-		printf("%d: %s\n", clang_getTokenKind(tokens[i]), clang_getCString(spelling));
-		clang_disposeString(spelling);
-	}
-#endif
-	clang_disposeTokens(TU, tokens, num_tokens);
-	syntax_hilight(TU, full_range, "test.c");
+
+	syntax_hilight(TU, full_range, clang_getCString(filename));
+
+	clang_disposeString(filename);
 	clang_disposeTranslationUnit(TU);
 	clang_disposeIndex(Index);
 	return 0;
