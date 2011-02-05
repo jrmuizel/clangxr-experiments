@@ -6,7 +6,7 @@ LDFLAGS=-L$(LLVM_LIBS) -Wl,-rpath,$(LLVM_LIBS) -lclang -lstdc++
 test:
 
 check:
-	./test $(CXXFLAGS) test.cpp
+	./test $(CXXFLAGS) test.cpp | tee test.html
 
 clean:
 	rm -f test
