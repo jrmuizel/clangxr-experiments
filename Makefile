@@ -1,3 +1,6 @@
-CFLAGS=-O2 -Wall -I$(HOME)/usr/include/ -std=gnu99
-LDFLAGS=-L$(HOME)/usr/lib -Wl,-rpath,$(HOME)/usr/lib -lclang
+LLVM_INCLUDES=`llvm-config --includedir`
+LLVM_LIBS=`llvm-config --libdir`
+CFLAGS=-O2 -Wall -I$(LLVM_INCLUDES) -std=gnu99
+
+LDFLAGS=-L$(LLVM_LIBS) -Wl,-rpath,$(LLVM_LIBS) -lclang
 test:
