@@ -1,4 +1,7 @@
+#include <stdlib.h>
 #include <clang-c/Index.h>
+
+//#define printf (void)
 
 struct source_position {
 	int line_no;
@@ -35,6 +38,43 @@ get_endLocation(char* file)
 
 }
 
+void crash() {
+    *((int*)4) = 4;
+}
+
+char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
+{
+  if (tokenKind == CXToken_Comment) {
+    return "comment";
+  }
+  if (clang_isDeclaration(kind)) {
+    return "declaration";
+  } else if (clang_isReference(kind)) {
+    return "reference";
+  } else if (clang_isExpression(kind)) {
+    return "operator";
+  } else if (clang_isStatement(kind)) {
+    puts("statement?");
+    crash();
+  } else if (clang_isInvalid(kind)) {
+    if (tokenKind == CXToken_Punctuation) {
+      return "punctuation";
+    }
+    puts("invalid?");
+    printf("%d", kind);
+    fflush(stdout);
+    crash();
+  } else if (clang_isTranslationUnit(kind)) {
+    puts("TU?");
+    crash();
+  } else if (clang_isPreprocessing(kind)) {
+    return "pp";
+  } else if (clang_isUnexposed(kind)) {
+    puts("unexposed?");
+    crash();
+  }
+}
+
 char *token_kind_to_string(CXTokenKind kind)
 {
 	switch (kind) {
@@ -54,14 +94,20 @@ char *token_kind_to_string(CXTokenKind kind)
 void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, char *file)
 {
 	CXToken *tokens;
+	CXCursor *cursors;
 	unsigned num_tokens;
 	clang_tokenize(TU, full_range, &tokens, &num_tokens);
+	cursors = malloc(sizeof(CXCursor) * num_tokens);
+	clang_annotateTokens(TU, tokens, num_tokens, cursors);
 	FILE *f = fopen(file, "r");
 	char buf[4096];
 	size_t bytes_read;
 	int token_i = 0;
 	CXToken cur_token;
+	CXCursor cur_cursor;
+	cur_cursor = cursors[token_i];
 	cur_token = tokens[token_i++];
+	enum CXCursorKind cur_kind = clang_getCursorKind(cur_cursor);
 	CXSourceRange cur_token_range = clang_getTokenExtent(TU, cur_token);
 	CXSourceLocation cur_token_start = clang_getRangeStart(cur_token_range);
 	CXSourceLocation cur_token_end = clang_getRangeEnd(cur_token_range);
@@ -77,14 +123,24 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, char *file)
 		int i;
 		for (i=0; i<bytes_read; i++) {
 			if (offset == start_offset) {
-				printf("<span class=\"%s\">", token_kind_to_string(clang_getTokenKind(cur_token)));
+			  if(cur_kind == 70) {
+			    CXSourceLocation location = clang_getCursorLocation(cur_cursor);
+			    CXFile file;
+			    clang_getSpellingLocation(location, &file, 0, 0, 0);
+			    printf("%s", clang_getCString(clang_getFileName(file)));
+			    printf("T%sT", clang_getCString(clang_getTokenSpelling(TU, cur_token)));
+			  }
+			  printf("%s", clang_getCString(clang_getCursorSpelling(cur_cursor)));
+				printf("<span class=\"%s\">", cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)));
 			}
 			printf("%c", buf[i]);
 			offset++;
 			if (offset == end_offset) {
 				printf("</span>");
 				if (token_i < num_tokens) {
+					cur_cursor = cursors[token_i];
 					cur_token = tokens[token_i++];
+					cur_kind = clang_getCursorKind(cur_cursor);
 					CXSourceRange cur_token_range = clang_getTokenExtent(TU, cur_token);
 					CXSourceLocation cur_token_start = clang_getRangeStart(cur_token_range);
 					CXSourceLocation cur_token_end = clang_getRangeEnd(cur_token_range);
@@ -151,3 +207,5 @@ int main(int argc, const char *const *argv)
 	clang_disposeIndex(Index);
 	return 0;
 }
+
+/* vim: set noexpandtab */
