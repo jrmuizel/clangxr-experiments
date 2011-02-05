@@ -6,7 +6,7 @@ LDFLAGS=-L$(LLVM_LIBS) -Wl,-rpath,$(LLVM_LIBS) -lclang
 test:
 
 check:
-	./test $(CFLAGS) test.cpp
+	./test $(CXXFLAGS) test.cpp
 
 clean:
 	rm -f test

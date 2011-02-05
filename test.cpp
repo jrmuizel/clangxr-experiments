@@ -59,6 +59,7 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
     } else if (tokenKind == CXToken_Keyword) {
       return "keyword";
     }
+    printf("tokenkind: %d\n", tokenKind);
     puts("statement?");
     crash();
   } else if (clang_isInvalid(kind)) {
