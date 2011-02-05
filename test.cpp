@@ -136,6 +136,7 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	       ".keyword { color: #7f0055 }\n"           \
 	       ".constants { color: #0066cc }\n"         \
 	       ".declaration { color: #ff1493 }\n"         \
+               ".pp { color: #100500 }\n"                \
 	       "</style>");
 	printf("<pre>");
 	do {
