@@ -54,6 +54,11 @@ char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
   } else if (clang_isExpression(kind)) {
     return "operator";
   } else if (clang_isStatement(kind)) {
+    if (tokenKind == CXToken_Punctuation) {
+      return "operator";
+    } else if (tokenKind == CXToken_Keyword) {
+      return "keyword";
+    }
     puts("statement?");
     crash();
   } else if (clang_isInvalid(kind)) {
