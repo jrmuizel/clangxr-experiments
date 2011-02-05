@@ -58,6 +58,9 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
       return "operator";
     } else if (tokenKind == CXToken_Keyword) {
       return "keyword";
+    } else if (tokenKind == CXToken_Identifier) {
+      return "statement"; // XXX ehsan: we should figure out what we're dealing with here.
+                          // hint: |case foo:|
     }
     printf("tokenkind: %d\n", tokenKind);
     puts("statement?");
@@ -67,10 +70,11 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
       return "punctuation";
     } else if (tokenKind == CXToken_Keyword) {
       return "keyword";
+    } else if (tokenKind == CXToken_Identifier) {
+      return "macro?"; // XXX ehsan: I got here on NULL
     }
+    printf("tokenkind: %d\n", tokenKind);
     puts("invalid?");
-    printf("%d", kind);
-    fflush(stdout);
     crash();
   } else if (clang_isTranslationUnit(kind)) {
     puts("TU?");
@@ -139,14 +143,6 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 		int i;
 		for (i=0; i<bytes_read; i++) {
 			if (offset == start_offset) {
-			  if(cur_kind == 70) {
-			    CXSourceLocation location = clang_getCursorLocation(cur_cursor);
-			    CXFile file;
-			    clang_getSpellingLocation(location, &file, 0, 0, 0);
-			    printf("%s", clang_getCString(clang_getFileName(file)));
-			    printf("T%sT", clang_getCString(clang_getTokenSpelling(TU, cur_token)));
-			  }
-			  printf("%s", clang_getCString(clang_getCursorSpelling(cur_cursor)));
 				printf("<span class=\"%s\">", cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)));
 			}
 			printf("%c", buf[i]);
