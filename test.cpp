@@ -42,7 +42,7 @@ void crash() {
     *((int*)4) = 4;
 }
 
-char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
+const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
 {
   if (tokenKind == CXToken_Comment) {
     return "comment";
@@ -77,7 +77,7 @@ char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind tokenKind)
   }
 }
 
-char *token_kind_to_string(CXTokenKind kind)
+const char *token_kind_to_string(CXTokenKind kind)
 {
 	switch (kind) {
 		case CXToken_Punctuation:
@@ -124,6 +124,8 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	       ".identifier { color: #aa7700 }\n"        \
 	       ".comment { color: #3f5fbf }\n"           \
 	       ".keyword { color: #7f0055 }\n"           \
+	       ".constants { color: #0066cc }\n"         \
+	       ".declaration { color: #ff1493 }\n"         \
 	       "</style>");
 	printf("<pre>");
 	do {
