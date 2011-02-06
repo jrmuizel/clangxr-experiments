@@ -61,6 +61,8 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
     } else if (tokenKind == CXToken_Identifier) {
       return "statement"; // XXX ehsan: we should figure out what we're dealing with here.
                           // hint: |case foo:|
+    } else if (tokenKind == CXToken_Literal) {
+      return "literal";
     }
     printf("tokenkind: %d\n", tokenKind);
     puts("statement?");
@@ -193,7 +195,7 @@ void print_padding()
   }
 }
 
-void print_cursor_info(CXCursor cursor)
+void print_cursor_info(CXCursor cursor, bool child)
 {
   CXCursorKind kind = clang_getCursorKind(cursor);
   CXSourceRange range = clang_getCursorExtent(cursor);
@@ -202,8 +204,9 @@ void print_cursor_info(CXCursor cursor)
   CXFile startFile, endFile;
   unsigned startLine, endLine;
   unsigned startColumn, endColumn;
-  clang_getSpellingLocation(start, &startFile, &startLine, &startColumn, NULL);
-  clang_getSpellingLocation(end, &endFile, &endLine, &endColumn, NULL);
+  unsigned startOffset, endOffset;
+  clang_getSpellingLocation(start, &startFile, &startLine, &startColumn, &startOffset);
+  clang_getSpellingLocation(end, &endFile, &endLine, &endColumn, &endOffset);
   printf("\"%s\" (%s:%d) [%s:%d(%d)..%s:%d(%d)]",
          // cursor spelling
          clang_getCString(clang_getCursorSpelling(cursor)),
@@ -225,15 +228,53 @@ void print_cursor_info(CXCursor cursor)
            // end column
            endColumn
       );
+
+  // print the contents of the range
+  if (!child || !startFile) {
+    return;
+  }
+  FILE * file = fopen(clang_getCString(clang_getFileName(startFile)), "r");
+  fseek(file, startOffset, SEEK_SET);
+  char *text = (char*)malloc(endOffset - startOffset + 1);
+  char *origtext = text;
+  text[endOffset - startOffset] = '\0';
+  fread(text, 1, endOffset - startOffset, file);
+  printf("<a href=\"#\" onclick=\"this.className='on'; return false;\">+<span>");
+  while (text && *text) {
+    char buf[2] = {'\0', '\0'};
+    switch (*text) {
+      case '\n':
+        printf("\\n");
+      case '\r':
+        printf("\\r");
+      case '\t':
+        printf("\\t");
+      case '<':
+        printf("&lt;");
+      case '>':
+        printf("&gt;");
+      case '&':
+        printf("&amp;");
+      case '"':
+        printf("&quot;");
+      default:
+        buf[0] = *text;
+        printf("%s", buf);
+    }
+    ++text;
+  }
+  fclose(file);
+  free(origtext);
+  printf("</span></a> ");
 }
 
 CXChildVisitResult cursor_visitor(CXCursor cursor, CXCursor parent, CXClientData)
 {
   // print the padding
   print_padding();
-  print_cursor_info(cursor);
+  print_cursor_info(cursor, true);
   printf(" ");
-  print_cursor_info(parent);
+  print_cursor_info(parent, false);
   printf("\n");
   ++ast_depth;
   clang_visitChildren(cursor, cursor_visitor, NULL);
@@ -244,6 +285,7 @@ CXChildVisitResult cursor_visitor(CXCursor cursor, CXCursor parent, CXClientData
 void print_ast(CXTranslationUnit TU)
 {
   CXCursor tuCursor = clang_getTranslationUnitCursor(TU);
+  printf("<style> a span { display: none } a.on {visibility: hidden} a.on span { display: inline; color: green; visibility: visible; cursor: default; text-decoration: none } </style>");
   printf("<h1>AST</h1><pre>");
   clang_visitChildren(tuCursor, cursor_visitor, NULL);
   printf("</pre>");
