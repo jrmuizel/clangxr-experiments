@@ -144,7 +144,11 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 		int i;
 		for (i=0; i<bytes_read; i++) {
 			if (offset == start_offset) {
-				printf("<span class=\"%s c%d t_%s\">", cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)), cur_kind, token_kind_to_string(clang_getTokenKind(cur_token)));
+				printf("<span class=\"%s c%d_%s t_%s\">",
+                                       cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)),
+                                       cur_kind,
+                                       clang_getCString(clang_getCursorKindSpelling(cur_kind)),
+                                       token_kind_to_string(clang_getTokenKind(cur_token)));
 			}
 			printf("%c", buf[i]);
 			offset++;
