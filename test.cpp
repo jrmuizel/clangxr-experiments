@@ -245,21 +245,29 @@ void print_cursor_info(CXCursor cursor, bool child)
     switch (*text) {
       case '\n':
         printf("\\n");
+        break;
       case '\r':
         printf("\\r");
+        break;
       case '\t':
         printf("\\t");
+        break;
       case '<':
         printf("&lt;");
+        break;
       case '>':
         printf("&gt;");
+        break;
       case '&':
         printf("&amp;");
+        break;
       case '"':
         printf("&quot;");
+        break;
       default:
         buf[0] = *text;
         printf("%s", buf);
+        break;
     }
     ++text;
   }
