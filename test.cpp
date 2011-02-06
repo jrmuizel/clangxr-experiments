@@ -127,11 +127,11 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	printf("<style>\n"                               \
 	       ".punctuation { color: #646464 }\n"       \
 	       ".literal { color: #2a00ff }\n"           \
-	       ".identifier { color: #aa7700 }\n"        \
+	       ".reference { color: #aa7700 }\n"         \
 	       ".comment { color: #3f5fbf }\n"           \
 	       ".keyword { color: #7f0055 }\n"           \
 	       ".constants { color: #0066cc }\n"         \
-	       ".declaration { color: #ff1493 }\n"         \
+	       ".declaration { color: #ff1493 }\n"       \
 	       "</style>");
 	printf("<pre>");
 	do {
@@ -146,7 +146,7 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 			    printf("%s", clang_getCString(clang_getFileName(file)));
 			    printf("T%sT", clang_getCString(clang_getTokenSpelling(TU, cur_token)));
 			  }
-			  printf("%s", clang_getCString(clang_getCursorSpelling(cur_cursor)));
+			  //printf("%s", clang_getCString(clang_getCursorSpelling(cur_cursor)));
 				printf("<span class=\"%s\">", cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)));
 			}
 			printf("%c", buf[i]);
