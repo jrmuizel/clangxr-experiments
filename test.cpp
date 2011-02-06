@@ -184,6 +184,68 @@ void print_CXString(CXString str)
 	printf("%s\n", clang_getCString(str));
 }
 
+unsigned ast_depth = 0;
+
+void print_padding()
+{
+  for (unsigned i = 0; i < ast_depth; ++i) {
+    printf("  ");
+  }
+}
+
+void print_cursor_info(CXCursor cursor, CXCursor parent)
+{
+  CXCursorKind kind = clang_getCursorKind(cursor);
+  CXSourceRange range = clang_getCursorExtent(cursor);
+  CXSourceLocation start = clang_getRangeStart(range),
+                   end = clang_getRangeEnd(range);
+  CXFile startFile, endFile;
+  unsigned startLine, endLine;
+  unsigned startColumn, endColumn;
+  clang_getSpellingLocation(start, &startFile, &startLine, &startColumn, NULL);
+  clang_getSpellingLocation(end, &endFile, &endLine, &endColumn, NULL);
+  printf("\"%s\" (%s:%d) [%s:%d(%d)..%s:%d(%d)]\n",
+         // cursor spelling
+         clang_getCString(clang_getCursorSpelling(cursor)),
+         // cursor kind spelling
+         clang_getCString(clang_getCursorKindSpelling(kind)),
+         // cursor kind
+         kind,
+         // extents:
+           // start file
+           clang_getCString(clang_getFileName(startFile)),
+           // start line
+           startLine,
+           // start column
+           startColumn,
+           // end file
+           clang_getCString(clang_getFileName(endFile)),
+           // end line
+           endLine,
+           // end column
+           endColumn
+      );
+}
+
+CXChildVisitResult cursor_visitor(CXCursor cursor, CXCursor parent, CXClientData)
+{
+  // print the padding
+  print_padding();
+  print_cursor_info(cursor, parent);
+  ++ast_depth;
+  clang_visitChildren(cursor, cursor_visitor, NULL);
+  --ast_depth;
+  return CXChildVisit_Continue;
+}
+
+void print_ast(CXTranslationUnit TU)
+{
+  CXCursor tuCursor = clang_getTranslationUnitCursor(TU);
+  printf("<h1>AST</h1><pre>");
+  clang_visitChildren(tuCursor, cursor_visitor, NULL);
+  printf("</pre>");
+}
+
 int main(int argc, const char *const *argv)
 {
 	CXIndex Index = clang_createIndex(0, 0);
@@ -199,6 +261,8 @@ int main(int argc, const char *const *argv)
 	CXSourceRange full_range = clang_getRange(begin, end);
 
 	syntax_hilight(TU, full_range, clang_getCString(filename));
+
+        print_ast(TU);
 
 	clang_disposeString(filename);
 	clang_disposeTranslationUnit(TU);
