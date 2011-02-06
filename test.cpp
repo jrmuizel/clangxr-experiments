@@ -193,7 +193,7 @@ void print_padding()
   }
 }
 
-void print_cursor_info(CXCursor cursor, CXCursor parent)
+void print_cursor_info(CXCursor cursor)
 {
   CXCursorKind kind = clang_getCursorKind(cursor);
   CXSourceRange range = clang_getCursorExtent(cursor);
@@ -204,7 +204,7 @@ void print_cursor_info(CXCursor cursor, CXCursor parent)
   unsigned startColumn, endColumn;
   clang_getSpellingLocation(start, &startFile, &startLine, &startColumn, NULL);
   clang_getSpellingLocation(end, &endFile, &endLine, &endColumn, NULL);
-  printf("\"%s\" (%s:%d) [%s:%d(%d)..%s:%d(%d)]\n",
+  printf("\"%s\" (%s:%d) [%s:%d(%d)..%s:%d(%d)]",
          // cursor spelling
          clang_getCString(clang_getCursorSpelling(cursor)),
          // cursor kind spelling
@@ -231,7 +231,10 @@ CXChildVisitResult cursor_visitor(CXCursor cursor, CXCursor parent, CXClientData
 {
   // print the padding
   print_padding();
-  print_cursor_info(cursor, parent);
+  print_cursor_info(cursor);
+  printf(" ");
+  print_cursor_info(parent);
+  printf("\n");
   ++ast_depth;
   clang_visitChildren(cursor, cursor_visitor, NULL);
   --ast_depth;
