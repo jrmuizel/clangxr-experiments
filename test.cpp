@@ -146,11 +146,19 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 		int i;
 		for (i=0; i<bytes_read; i++) {
 			if (offset == start_offset) {
-				printf("<span class=\"%s c%d_%s t_%s\">",
+				CXCursor null_cursor = clang_getNullCursor();
+				CXSourceLocation loc = clang_getCursorLocation(cur_cursor);
+				unsigned inst_line;
+				unsigned spelling_line;
+				clang_getInstantiationLocation(loc, NULL, &inst_line, NULL, NULL);
+				clang_getSpellingLocation(loc, NULL, &spelling_line, NULL, NULL);
+				printf("<span class=\"%s c%d_%s t_%s l_i%d_s%d %s\">",
                                        cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)),
                                        cur_kind,
                                        clang_getCString(clang_getCursorKindSpelling(cur_kind)),
-                                       token_kind_to_string(clang_getTokenKind(cur_token)));
+                                       token_kind_to_string(clang_getTokenKind(cur_token)),
+				       inst_line, spelling_line,
+				       clang_equalCursors(null_cursor, cur_cursor) ? "nullcur" : "");
 			}
 			printf("%c", buf[i]);
 			offset++;
