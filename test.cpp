@@ -58,6 +58,9 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
       return "operator";
     } else if (tokenKind == CXToken_Keyword) {
       return "keyword";
+    } else if (tokenKind == CXToken_Identifier) {
+      return "statement"; // XXX ehsan: we should figure out what we're dealing with here.
+                          // hint: |case foo:|
     }
     printf("tokenkind: %d\n", tokenKind);
     puts("statement?");
@@ -67,10 +70,11 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
       return "punctuation";
     } else if (tokenKind == CXToken_Keyword) {
       return "keyword";
+    } else if (tokenKind == CXToken_Identifier) {
+      return "macro?"; // XXX ehsan: I got here on NULL
     }
+    printf("tokenkind: %d\n", tokenKind);
     puts("invalid?");
-    printf("%d", kind);
-    fflush(stdout);
     crash();
   } else if (clang_isTranslationUnit(kind)) {
     puts("TU?");
@@ -132,6 +136,7 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 	       ".keyword { color: #7f0055 }\n"           \
 	       ".constants { color: #0066cc }\n"         \
 	       ".declaration { color: #ff1493 }\n"       \
+               ".pp { color: #100500 }\n"                \
 	       "</style>");
 	printf("<pre>");
 	do {
