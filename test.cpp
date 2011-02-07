@@ -61,6 +61,8 @@ const char *cursor_kind_to_string(enum CXCursorKind kind, enum CXTokenKind token
     } else if (tokenKind == CXToken_Identifier) {
       return "statement"; // XXX ehsan: we should figure out what we're dealing with here.
                           // hint: |case foo:|
+    } else if (tokenKind == CXToken_Literal) {
+      return "literal";
     }
     printf("tokenkind: %d\n", tokenKind);
     puts("statement?");
@@ -144,15 +146,11 @@ void syntax_hilight(CXTranslationUnit TU, CXSourceRange full_range, const char *
 		int i;
 		for (i=0; i<bytes_read; i++) {
 			if (offset == start_offset) {
-			  if(cur_kind == 70) {
-			    CXSourceLocation location = clang_getCursorLocation(cur_cursor);
-			    CXFile file;
-			    clang_getSpellingLocation(location, &file, 0, 0, 0);
-			    printf("%s", clang_getCString(clang_getFileName(file)));
-			    printf("T%sT", clang_getCString(clang_getTokenSpelling(TU, cur_token)));
-			  }
-			  //printf("%s", clang_getCString(clang_getCursorSpelling(cur_cursor)));
-				printf("<span class=\"%s\">", cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)));
+				printf("<span class=\"%s c%d_%s t_%s\">",
+                                       cursor_kind_to_string(cur_kind, clang_getTokenKind(cur_token)),
+                                       cur_kind,
+                                       clang_getCString(clang_getCursorKindSpelling(cur_kind)),
+                                       token_kind_to_string(clang_getTokenKind(cur_token)));
 			}
 			printf("%c", buf[i]);
 			offset++;
@@ -188,6 +186,119 @@ void print_CXString(CXString str)
 	printf("%s\n", clang_getCString(str));
 }
 
+unsigned ast_depth = 0;
+
+void print_padding()
+{
+  for (unsigned i = 0; i < ast_depth; ++i) {
+    printf("  ");
+  }
+}
+
+void print_cursor_info(CXCursor cursor, bool child)
+{
+  CXCursorKind kind = clang_getCursorKind(cursor);
+  CXSourceRange range = clang_getCursorExtent(cursor);
+  CXSourceLocation start = clang_getRangeStart(range),
+                   end = clang_getRangeEnd(range);
+  CXFile startFile, endFile;
+  unsigned startLine, endLine;
+  unsigned startColumn, endColumn;
+  unsigned startOffset, endOffset;
+  clang_getSpellingLocation(start, &startFile, &startLine, &startColumn, &startOffset);
+  clang_getSpellingLocation(end, &endFile, &endLine, &endColumn, &endOffset);
+  printf("\"%s\" (%s:%d) [%s:%d(%d)..%s:%d(%d)]",
+         // cursor spelling
+         clang_getCString(clang_getCursorSpelling(cursor)),
+         // cursor kind spelling
+         clang_getCString(clang_getCursorKindSpelling(kind)),
+         // cursor kind
+         kind,
+         // extents:
+           // start file
+           clang_getCString(clang_getFileName(startFile)),
+           // start line
+           startLine,
+           // start column
+           startColumn,
+           // end file
+           clang_getCString(clang_getFileName(endFile)),
+           // end line
+           endLine,
+           // end column
+           endColumn
+      );
+
+  // print the contents of the range
+  if (!child || !startFile) {
+    return;
+  }
+  FILE * file = fopen(clang_getCString(clang_getFileName(startFile)), "r");
+  fseek(file, startOffset, SEEK_SET);
+  char *text = (char*)malloc(endOffset - startOffset + 1);
+  char *origtext = text;
+  text[endOffset - startOffset] = '\0';
+  fread(text, 1, endOffset - startOffset, file);
+  printf("<a href=\"#\" onclick=\"this.className='on'; return false;\">+<span>");
+  while (text && *text) {
+    char buf[2] = {'\0', '\0'};
+    switch (*text) {
+      case '\n':
+        printf("\\n");
+        break;
+      case '\r':
+        printf("\\r");
+        break;
+      case '\t':
+        printf("\\t");
+        break;
+      case '<':
+        printf("&lt;");
+        break;
+      case '>':
+        printf("&gt;");
+        break;
+      case '&':
+        printf("&amp;");
+        break;
+      case '"':
+        printf("&quot;");
+        break;
+      default:
+        buf[0] = *text;
+        printf("%s", buf);
+        break;
+    }
+    ++text;
+  }
+  fclose(file);
+  free(origtext);
+  printf("</span></a> ");
+}
+
+CXChildVisitResult cursor_visitor(CXCursor cursor, CXCursor parent, CXClientData)
+{
+  // print the padding
+  print_padding();
+  print_cursor_info(cursor, true);
+  printf(" ");
+  print_cursor_info(parent, false);
+  printf("\n");
+  ++ast_depth;
+  clang_visitChildren(cursor, cursor_visitor, NULL);
+  --ast_depth;
+  return CXChildVisit_Continue;
+}
+
+void print_ast(CXTranslationUnit TU)
+{
+  CXCursor tuCursor = clang_getTranslationUnitCursor(TU);
+  printf("<style> a span { display: none } a.on {visibility: hidden} a.on span { display: inline; color: green; visibility: visible; cursor: default; text-decoration: none } </style>");
+  printf("<h1>AST</h1><pre>");
+  clang_visitChildren(tuCursor, cursor_visitor, NULL);
+  printf("</pre>");
+}
+
 int main(int argc, const char *const *argv)
 {
 	CXIndex Index = clang_createIndex(0, 0);
@@ -203,6 +314,8 @@ int main(int argc, const char *const *argv)
 	CXSourceRange full_range = clang_getRange(begin, end);
 
 	syntax_hilight(TU, full_range, clang_getCString(filename));
+
+        print_ast(TU);
 
 	clang_disposeString(filename);
 	clang_disposeTranslationUnit(TU);
